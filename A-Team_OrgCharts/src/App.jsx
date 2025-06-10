@@ -3,12 +3,22 @@ import * as XLSX from "xlsx";
 import OrgChart from "./OrgChart";
 
 function fixEncoding(str) {
-  try {
-    return decodeURIComponent(escape(str));
-  } catch {
-    return str;
+  if (typeof str !== "string") return str;
+
+  // Heuristic: looks like wrongly decoded UTF-8
+  const likelyCorrupted = /Ã|Â|â|ê|î|ô|û/.test(str);
+
+  if (likelyCorrupted) {
+    try {
+      return decodeURIComponent(escape(str));
+    } catch {
+      return str;
+    }
   }
+
+  return str;
 }
+
 
 function App() {
   const [fileName, setFileName] = useState("");
