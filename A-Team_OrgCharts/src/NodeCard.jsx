@@ -9,12 +9,18 @@ export default function NodeCard({ nodeDatum }) {
       return value.length > 10 ? value.substring(10).trim() : value;
     }
 
-    // For company, department (team), etc.
     return value.replace(/^\d{3,}[ _-]?/, "").trim();
   };
 
   return (
-    <div className="rounded-xl bg-white shadow-md border border-gray-300 p-3 w-[320px]">
+    <div
+      style={{
+        transition: "all 0.5s ease-in-out",
+        transform: "scale(1)",
+        opacity: 1,
+      }}
+      className="rounded-xl bg-white shadow-md border border-gray-300 p-3 w-[320px]"
+    >
       <div className="font-semibold text-base text-gray-900 mb-1">{name}</div>
       <div className="font-bold text-sm text-gray-800 mb-1">
         {attributes?.Position || "-"}
