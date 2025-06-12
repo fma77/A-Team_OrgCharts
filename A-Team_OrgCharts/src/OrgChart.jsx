@@ -36,19 +36,7 @@ export default function OrgChart({ data }) {
       }
     });
 
-    // Step 1: apply collapse
-    const applyCollapse = (node) => {
-      const id = node.attributes?.EmployeeID;
-      if (collapsedSet.has(id)) {
-        delete node.children;
-      } else if (node.children) {
-        node.children.forEach(applyCollapse);
-      }
-    };
-
-    applyCollapse(root);
-
-    // Step 2: tag each node with _hasChildren from flat data
+    // Tag nodes that have children
     const tagParents = (node) => {
       const id = node.attributes?.EmployeeID;
       const reports = flatData.filter(p => p["Manager User Sys ID"] === id);
@@ -60,7 +48,36 @@ export default function OrgChart({ data }) {
       }
     };
 
+    // Count total descendants for each node
+    const countDescendants = (node) => {
+      if (!node.children || node.children.length === 0) {
+        node.descendantCount = 0;
+        return 0;
+      }
+
+      let count = 0;
+      for (let child of node.children) {
+        count += 1 + countDescendants(child);
+      }
+
+      node.descendantCount = count;
+      return count;
+    };
+
+    // Collapse nodes based on state
+    const applyCollapse = (node) => {
+      const id = node.attributes?.EmployeeID;
+      if (collapsedSet.has(id)) {
+        delete node.children;
+      } else if (node.children) {
+        node.children.forEach(applyCollapse);
+      }
+    };
+
     tagParents(root);
+    countDescendants(root);
+    applyCollapse(root);
+
     return root;
   };
 
@@ -95,6 +112,7 @@ export default function OrgChart({ data }) {
             const id = nodeDatum.attributes?.EmployeeID;
             const isCollapsed = collapsedNodes.has(id);
             const hasChildren = nodeDatum._hasChildren === true;
+            const count = nodeDatum.descendantCount;
 
             return (
               <g onClick={() => handleNodeClick(nodeDatum)}>
@@ -113,20 +131,20 @@ export default function OrgChart({ data }) {
                           position: "absolute",
                           top: "6px",
                           right: "8px",
-                          width: "20px",
-                          height: "20px",
-                          borderRadius: "50%",
+                          padding: "2px 6px",
+                          borderRadius: "9999px",
                           backgroundColor: "#e2e8f0",
                           color: "#1f2937",
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "center",
-                          fontSize: "14px",
+                          gap: "4px",
+                          fontSize: "13px",
                           fontWeight: "bold",
                           border: "1px solid #cbd5e1",
                         }}
                       >
-                        {isCollapsed ? "+" : "–"}
+                        <span>{isCollapsed ? "▶" : "🔽"}</span>
+                        <span>{count}</span>
                       </div>
                     )}
                   </div>
