@@ -5,9 +5,7 @@ import OrgChart from "./OrgChart";
 function fixEncoding(str) {
   if (typeof str !== "string") return str;
 
-  // Heuristic: looks like wrongly decoded UTF-8
   const likelyCorrupted = /Ã|Â|â|ê|î|ô|û/.test(str);
-
   if (likelyCorrupted) {
     try {
       return decodeURIComponent(escape(str));
@@ -19,16 +17,14 @@ function fixEncoding(str) {
   return str;
 }
 
-
 function App() {
-  const [fileName, setFileName] = useState("");
-  const [orgData, setOrgData] = useState(null);
+  const [files, setFiles] = useState([]); // [{ name, data }]
+  const [selectedIndex, setSelectedIndex] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
-
-    setFileName(file.name);
 
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -48,33 +44,65 @@ function App() {
         return fixedRow;
       });
 
-      console.log("Sample cleaned row:", cleanedData[0]);
-      setOrgData(cleanedData);
-      console.log("Available columns:", Object.keys(cleanedData[0]));
-
+      const newFile = { name: file.name, data: cleanedData };
+      setFiles((prev) => [...prev, newFile]);
+      setSelectedIndex(files.length); // auto-select the new one
     };
 
     reader.readAsArrayBuffer(file);
   };
 
+  const selectedFile = files[selectedIndex];
+
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="p-4">
-        <h1 className="text-2xl font-bold text-blue-600 mb-4">Org Chart App</h1>
+    <div className="flex min-h-screen bg-gray-100">
+      {/* Sidebar */}
+      <div className={`bg-white border-r border-gray-300 p-4 transition-all duration-300 ${sidebarOpen ? "w-64" : "w-12"} overflow-hidden`}>
+        <div className="flex justify-between items-center mb-4">
+          <span className="font-bold text-blue-600 text-sm">Files</span>
+          <button
+            className="text-xs text-gray-600 hover:text-gray-900"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            {sidebarOpen ? "←" : "→"}
+          </button>
+        </div>
+
         <input
           type="file"
           accept=".xlsx, .xls, .csv"
           onChange={handleFileUpload}
-          className="mb-2"
+          className="mb-3 text-xs"
         />
-        {fileName && (
-          <p className="text-sm text-gray-700">
-            Uploaded file: <strong>{fileName}</strong>
-          </p>
+
+        {sidebarOpen && (
+          <ul className="space-y-2 text-sm">
+            {files.map((file, idx) => (
+              <li
+                key={idx}
+                onClick={() => setSelectedIndex(idx)}
+                className={`cursor-pointer px-2 py-1 rounded ${
+                  idx === selectedIndex
+                    ? "bg-blue-100 text-blue-700 font-medium"
+                    : "hover:bg-gray-100"
+                }`}
+              >
+                {file.name}
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 
-      {orgData && <OrgChart data={orgData} />}
+      {/* Main view */}
+      <div className="flex-1 p-4">
+        <h1 className="text-2xl font-bold text-blue-600 mb-4">Org Chart App</h1>
+        {selectedFile ? (
+          <OrgChart data={selectedFile.data} />
+        ) : (
+          <p className="text-sm text-gray-600">No file selected.</p>
+        )}
+      </div>
     </div>
   );
 }
