@@ -1,10 +1,8 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef } from "react";
 import Tree from "react-d3-tree";
 import NodeCard from "./NodeCard";
 
-export default function OrgChart({ data }) {
-  const [treeData, setTreeData] = useState(null);
-  const [collapsedNodes, setCollapsedNodes] = useState(new Set());
+export default function OrgChart({ data, collapsedNodes, setCollapsedNodes }) {
   const treeContainer = useRef();
 
   const buildTree = (flatData, collapsedSet = new Set()) => {
@@ -36,7 +34,6 @@ export default function OrgChart({ data }) {
       }
     });
 
-    // Tag nodes that have children
     const tagParents = (node) => {
       const id = node.attributes?.EmployeeID;
       const reports = flatData.filter(p => p["Manager User Sys ID"] === id);
@@ -48,7 +45,6 @@ export default function OrgChart({ data }) {
       }
     };
 
-    // Count total descendants for each node
     const countDescendants = (node) => {
       if (!node.children || node.children.length === 0) {
         node.descendantCount = 0;
@@ -64,7 +60,6 @@ export default function OrgChart({ data }) {
       return count;
     };
 
-    // Collapse nodes based on state
     const applyCollapse = (node) => {
       const id = node.attributes?.EmployeeID;
       if (collapsedSet.has(id)) {
@@ -81,10 +76,7 @@ export default function OrgChart({ data }) {
     return root;
   };
 
-  useEffect(() => {
-    const tree = buildTree(data, collapsedNodes);
-    setTreeData(tree);
-  }, [data, collapsedNodes]);
+  const treeData = buildTree(data, collapsedNodes);
 
   const handleNodeClick = (nodeData) => {
     const id = nodeData.attributes?.EmployeeID;

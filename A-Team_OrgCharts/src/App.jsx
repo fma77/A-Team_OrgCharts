@@ -23,6 +23,9 @@ function App() {
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  // 🔹 Move collapse state here
+  const [collapsedNodes, setCollapsedNodes] = useState(new Set());
+
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -48,6 +51,7 @@ function App() {
       const newFile = { name: file.name, data: cleanedData };
       setFiles((prev) => [...prev, newFile]);
       setSelectedIndex(files.length);
+      setCollapsedNodes(new Set()); // reset collapse on new file
     };
 
     reader.readAsArrayBuffer(file);
@@ -62,14 +66,21 @@ function App() {
         toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         files={files}
         selectedIndex={selectedIndex}
-        onSelectFile={(i) => setSelectedIndex(i)}
+        onSelectFile={(i) => {
+          setSelectedIndex(i);
+          setCollapsedNodes(new Set()); // reset collapse on file switch
+        }}
         onUpload={handleFileUpload}
       />
 
       <main className="flex-1 p-6 bg-gray-50 min-h-screen overflow-auto">
         <h1 className="text-2xl font-bold text-ascblue mb-4">Org Chart App</h1>
         {selectedFile ? (
-          <OrgChart data={selectedFile.data} />
+          <OrgChart
+            data={selectedFile.data}
+            collapsedNodes={collapsedNodes}
+            setCollapsedNodes={setCollapsedNodes}
+          />
         ) : (
           <p className="text-sm text-gray-600">No file selected.</p>
         )}
