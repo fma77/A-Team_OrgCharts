@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "html-to-image": "^1.11.13",
     "lucide-react": "^0.515.0",
     "react": "^19.1.0",
     "react-d3-tree": "^3.6.6",
