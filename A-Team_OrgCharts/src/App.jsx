@@ -1,6 +1,7 @@
 import { useState } from "react";
 import * as XLSX from "xlsx";
 import OrgChart from "./OrgChart";
+import Sidebar from "./Sidebar";
 
 function fixEncoding(str) {
   if (typeof str !== "string") return str;
@@ -46,7 +47,7 @@ function App() {
 
       const newFile = { name: file.name, data: cleanedData };
       setFiles((prev) => [...prev, newFile]);
-      setSelectedIndex(files.length); // auto-select the new one
+      setSelectedIndex(files.length);
     };
 
     reader.readAsArrayBuffer(file);
@@ -55,54 +56,24 @@ function App() {
   const selectedFile = files[selectedIndex];
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      {/* Sidebar */}
-      <div className={`bg-white border-r border-gray-300 p-4 transition-all duration-300 ${sidebarOpen ? "w-64" : "w-12"} overflow-hidden`}>
-        <div className="flex justify-between items-center mb-4">
-          <span className="font-bold text-blue-600 text-sm">Files</span>
-          <button
-            className="text-xs text-gray-600 hover:text-gray-900"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-          >
-            {sidebarOpen ? "←" : "→"}
-          </button>
-        </div>
+    <div className="flex font-sans text-gray-900">
+      <Sidebar
+        sidebarOpen={sidebarOpen}
+        toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        files={files}
+        selectedIndex={selectedIndex}
+        onSelectFile={(i) => setSelectedIndex(i)}
+        onUpload={handleFileUpload}
+      />
 
-        <input
-          type="file"
-          accept=".xlsx, .xls, .csv"
-          onChange={handleFileUpload}
-          className="mb-3 text-xs"
-        />
-
-        {sidebarOpen && (
-          <ul className="space-y-2 text-sm">
-            {files.map((file, idx) => (
-              <li
-                key={idx}
-                onClick={() => setSelectedIndex(idx)}
-                className={`cursor-pointer px-2 py-1 rounded ${
-                  idx === selectedIndex
-                    ? "bg-blue-100 text-blue-700 font-medium"
-                    : "hover:bg-gray-100"
-                }`}
-              >
-                {file.name}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* Main view */}
-      <div className="flex-1 p-4">
-        <h1 className="text-2xl font-bold text-blue-600 mb-4">Org Chart App</h1>
+      <main className="flex-1 p-6 bg-gray-50 min-h-screen overflow-auto">
+        <h1 className="text-2xl font-bold text-ascblue mb-4">Org Chart App</h1>
         {selectedFile ? (
           <OrgChart data={selectedFile.data} />
         ) : (
           <p className="text-sm text-gray-600">No file selected.</p>
         )}
-      </div>
+      </main>
     </div>
   );
 }
