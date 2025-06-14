@@ -6,7 +6,7 @@ import * as htmlToImage from "html-to-image";
 export default function OrgChart({ data, collapsedNodes, setCollapsedNodes }) {
   const [treeData, setTreeData] = useState(null);
   const treeRef = useRef();
-  const svgRef = useRef(); // new ref to real SVG
+  const svgRef = useRef();
 
   const buildTree = (flatData, collapsedSet = new Set()) => {
     const idMap = {};
@@ -96,28 +96,24 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes }) {
   };
 
   const downloadImage = () => {
-    if (!svgRef.current || !treeRef.current) {
-      console.warn("SVG or tree ref missing");
+    const svg = svgRef.current;
+    const tree = treeRef.current;
+
+    if (!svg || !tree) {
+      console.warn("SVG or Tree not available");
       return;
     }
 
-    // Reset view before exporting
-    treeRef.current.zoom(1);
-    treeRef.current.setTranslate({ x: window.innerWidth / 2, y: 150 });
+    // Reset zoom and position for export
+    tree.zoom(1);
+    tree.setTranslate({ x: window.innerWidth / 2, y: 150 });
 
-    // Ensure layout has settled
+    // Force layout to apply before snapshot
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        const svg = svgRef.current;
-
-        if (!svg) return;
-
-        const bbox = svg.getBBox();
-        console.log("🧪 SVG Bounding Box:", bbox);
-
         htmlToImage
           .toPng(svg, {
-            backgroundColor: "#f8fafa",
+            backgroundColor: "#ffffff",
             pixelRatio: 2,
           })
           .then((dataUrl) => {
@@ -126,8 +122,8 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes }) {
             link.href = dataUrl;
             link.click();
           })
-          .catch((err) => {
-            console.error("❌ Export failed:", err);
+          .catch((error) => {
+            console.error("Export failed:", error);
           });
       });
     });
@@ -135,10 +131,10 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes }) {
 
   return (
     <div className="w-full h-screen overflow-auto">
-      <div className="flex justify-end p-2">
+      <div className="flex justify-end p-4">
         <button
           onClick={downloadImage}
-          className="bg-ascblue text-white text-sm px-4 py-1 rounded hover:bg-[#00252f] transition"
+          className="bg-ascblue text-white text-sm px-4 py-2 rounded hover:bg-[#00252f] transition"
         >
           Export as Image
         </button>
@@ -155,7 +151,7 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes }) {
             zoomable={true}
             nodeSize={{ x: 400, y: 300 }}
             transitionDuration={500}
-            svgRef={svgRef} // direct SVG access
+            svgRef={svgRef} // <-- pass the ref for html-to-image
             renderCustomNodeElement={({ nodeDatum }) => {
               const id = nodeDatum.attributes?.EmployeeID;
               const isCollapsed = collapsedNodes.has(id);
@@ -171,7 +167,14 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes }) {
                     y={-120}
                     style={{ pointerEvents: "none" }}
                   >
-                    <div style={{ pointerEvents: "all", position: "relative" }}>
+                    <div
+                      style={{
+                        pointerEvents: "all",
+                        position: "relative",
+                        width: "320px",
+                        height: "240px",
+                      }}
+                    >
                       <NodeCard nodeDatum={nodeDatum} />
                       {hasChildren && (
                         <div
