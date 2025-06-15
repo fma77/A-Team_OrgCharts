@@ -19,11 +19,9 @@ function fixEncoding(str) {
 }
 
 function App() {
-  const [files, setFiles] = useState([]); // [{ name, data }]
+  const [files, setFiles] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-
-  // 🔹 Move collapse state here
   const [collapsedNodes, setCollapsedNodes] = useState(new Set());
 
   const handleFileUpload = (event) => {
@@ -51,10 +49,14 @@ function App() {
       const newFile = { name: file.name, data: cleanedData };
       setFiles((prev) => [...prev, newFile]);
       setSelectedIndex(files.length);
-      setCollapsedNodes(new Set()); // reset collapse on new file
+      setCollapsedNodes(new Set());
     };
 
     reader.readAsArrayBuffer(file);
+  };
+
+  const handleExportImage = (file) => {
+    alert("Image export not implemented yet — coming soon!");
   };
 
   const selectedFile = files[selectedIndex];
@@ -68,19 +70,16 @@ function App() {
         selectedIndex={selectedIndex}
         onSelectFile={(i) => {
           setSelectedIndex(i);
-          setCollapsedNodes(new Set()); // reset collapse on file switch
+          setCollapsedNodes(new Set());
         }}
         onUpload={handleFileUpload}
+        onExportImage={handleExportImage}
       />
 
       <main className="flex-1 p-6 bg-gray-50 min-h-screen overflow-auto">
         <h1 className="text-2xl font-bold text-ascblue mb-4">Org Chart App</h1>
         {selectedFile ? (
-          <OrgChart
-            data={selectedFile.data}
-            collapsedNodes={collapsedNodes}
-            setCollapsedNodes={setCollapsedNodes}
-          />
+          <OrgChart data={selectedFile.data} />
         ) : (
           <p className="text-sm text-gray-600">No file selected.</p>
         )}

@@ -1,4 +1,11 @@
-import { ChevronLeft, ChevronRight, Upload, FileText, Settings } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Upload,
+  FileText,
+  Settings,
+  Image,
+} from "lucide-react";
 
 export default function Sidebar({
   sidebarOpen,
@@ -7,6 +14,7 @@ export default function Sidebar({
   selectedIndex,
   onSelectFile,
   onUpload,
+  onExportImage,
 }) {
   return (
     <div
@@ -43,16 +51,29 @@ export default function Sidebar({
         {files.map((file, idx) => (
           <div
             key={idx}
-            onClick={() => onSelectFile(idx)}
-            className={`flex items-center gap-2 cursor-pointer rounded-md px-3 py-2 mb-1 text-sm transition-all ${
+            className={`flex items-center justify-between group cursor-pointer rounded-md px-3 py-2 mb-1 text-sm transition-all ${
               idx === selectedIndex
                 ? "bg-ascblue text-white font-semibold"
                 : "hover:bg-gray-100"
             }`}
-            title={file.name}
           >
-            <FileText size={16} />
-            {sidebarOpen && <span className="truncate">{file.name}</span>}
+            <div
+              className="flex items-center gap-2 truncate"
+              onClick={() => onSelectFile(idx)}
+              title={file.name}
+            >
+              <FileText size={16} />
+              {sidebarOpen && <span className="truncate">{file.name}</span>}
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => onExportImage(file)}
+                className="text-gray-400 hover:text-ascblue"
+                title="Export to image"
+              >
+                <Image size={16} />
+              </button>
+            </div>
           </div>
         ))}
       </div>
