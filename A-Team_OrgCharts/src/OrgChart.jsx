@@ -1,12 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import Tree from "react-d3-tree";
 import NodeCard from "./NodeCard";
-import * as htmlToImage from "html-to-image";
 
-export default function OrgChart({ data, collapsedNodes, setCollapsedNodes }) {
+export default function OrgChart({ data }) {
   const [treeData, setTreeData] = useState(null);
-  const treeRef = useRef();
-  const svgRef = useRef();
+  const [collapsedNodes, setCollapsedNodes] = useState(new Set());
+  const treeContainer = useRef();
 
   const buildTree = (flatData, collapsedSet = new Set()) => {
     const idMap = {};
@@ -37,9 +36,10 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes }) {
       }
     });
 
+    // Tag nodes that have children
     const tagParents = (node) => {
       const id = node.attributes?.EmployeeID;
-      const reports = flatData.filter((p) => p["Manager User Sys ID"] === id);
+      const reports = flatData.filter(p => p["Manager User Sys ID"] === id);
       if (reports.length > 0) {
         node._hasChildren = true;
       }
@@ -48,6 +48,7 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes }) {
       }
     };
 
+    // Count total descendants for each node
     const countDescendants = (node) => {
       if (!node.children || node.children.length === 0) {
         node.descendantCount = 0;
@@ -63,6 +64,7 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes }) {
       return count;
     };
 
+    // Collapse nodes based on state
     const applyCollapse = (node) => {
       const id = node.attributes?.EmployeeID;
       if (collapsedSet.has(id)) {
@@ -95,117 +97,63 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes }) {
     setCollapsedNodes(newSet);
   };
 
-  const downloadImage = () => {
-    const svg = svgRef.current;
-    const tree = treeRef.current;
-
-    if (!svg || !tree) {
-      console.warn("SVG or Tree not available");
-      return;
-    }
-
-    // Reset zoom and position for export
-    tree.zoom(1);
-    tree.setTranslate({ x: window.innerWidth / 2, y: 150 });
-
-    // Force layout to apply before snapshot
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        htmlToImage
-          .toPng(svg, {
-            backgroundColor: "#ffffff",
-            pixelRatio: 2,
-          })
-          .then((dataUrl) => {
-            const link = document.createElement("a");
-            link.download = "org-chart.png";
-            link.href = dataUrl;
-            link.click();
-          })
-          .catch((error) => {
-            console.error("Export failed:", error);
-          });
-      });
-    });
-  };
-
   return (
-    <div className="w-full h-screen overflow-auto">
-      <div className="flex justify-end p-4">
-        <button
-          onClick={downloadImage}
-          className="bg-ascblue text-white text-sm px-4 py-2 rounded hover:bg-[#00252f] transition"
-        >
-          Export as Image
-        </button>
-      </div>
+    <div className="w-full h-screen overflow-auto" ref={treeContainer}>
+      {treeData && (
+        <Tree
+          data={[treeData]}
+          orientation="vertical"
+          pathFunc="step"
+          translate={{ x: window.innerWidth / 2, y: 150 }}
+          zoomable={true}
+          nodeSize={{ x: 400, y: 300 }}
+          transitionDuration={500}
+          renderCustomNodeElement={({ nodeDatum }) => {
+            const id = nodeDatum.attributes?.EmployeeID;
+            const isCollapsed = collapsedNodes.has(id);
+            const hasChildren = nodeDatum._hasChildren === true;
+            const count = nodeDatum.descendantCount;
 
-      <div className="overflow-auto">
-        {treeData && (
-          <Tree
-            ref={treeRef}
-            data={[treeData]}
-            orientation="vertical"
-            pathFunc="step"
-            translate={{ x: window.innerWidth / 2, y: 150 }}
-            zoomable={true}
-            nodeSize={{ x: 400, y: 300 }}
-            transitionDuration={500}
-            svgRef={svgRef} // <-- pass the ref for html-to-image
-            renderCustomNodeElement={({ nodeDatum }) => {
-              const id = nodeDatum.attributes?.EmployeeID;
-              const isCollapsed = collapsedNodes.has(id);
-              const hasChildren = nodeDatum._hasChildren === true;
-              const count = nodeDatum.descendantCount;
-
-              return (
-                <g onClick={() => handleNodeClick(nodeDatum)}>
-                  <foreignObject
-                    width={320}
-                    height={240}
-                    x={-160}
-                    y={-120}
-                    style={{ pointerEvents: "none" }}
-                  >
-                    <div
-                      style={{
-                        pointerEvents: "all",
-                        position: "relative",
-                        width: "320px",
-                        height: "240px",
-                      }}
-                    >
-                      <NodeCard nodeDatum={nodeDatum} />
-                      {hasChildren && (
-                        <div
-                          style={{
-                            position: "absolute",
-                            top: "6px",
-                            right: "8px",
-                            padding: "2px 6px",
-                            borderRadius: "9999px",
-                            backgroundColor: "#e2e8f0",
-                            color: "#1f2937",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            fontSize: "13px",
-                            fontWeight: "bold",
-                            border: "1px solid #cbd5e1",
-                          }}
-                        >
-                          <span>{isCollapsed ? "▶" : "🔽"}</span>
-                          <span>{count}</span>
-                        </div>
-                      )}
-                    </div>
-                  </foreignObject>
-                </g>
-              );
-            }}
-          />
-        )}
-      </div>
+            return (
+              <g onClick={() => handleNodeClick(nodeDatum)}>
+                <foreignObject
+                  width={320}
+                  height={240}
+                  x={-160}
+                  y={-120}
+                  style={{ pointerEvents: "none" }}
+                >
+                  <div style={{ pointerEvents: "all", position: "relative" }}>
+                    <NodeCard nodeDatum={nodeDatum} />
+                    {hasChildren && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "6px",
+                          right: "8px",
+                          padding: "2px 6px",
+                          borderRadius: "9999px",
+                          backgroundColor: "#e2e8f0",
+                          color: "#1f2937",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          fontSize: "13px",
+                          fontWeight: "bold",
+                          border: "1px solid #cbd5e1",
+                        }}
+                      >
+                        <span>{isCollapsed ? "▶" : "🔽"}</span>
+                        <span>{count}</span>
+                      </div>
+                    )}
+                  </div>
+                </foreignObject>
+              </g>
+            );
+          }}
+        />
+      )}
     </div>
   );
 }
