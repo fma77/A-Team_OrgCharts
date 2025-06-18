@@ -18,23 +18,37 @@ export default function Sidebar({
   onUpload,
   onDelete,
 }) {
-  const [pendingDelete, setPendingDelete] = useState(null); // index of file to delete
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   return (
     <div
       className={`h-screen bg-white border-r border-ascgrey flex flex-col transition-all duration-300 ${
-        sidebarOpen ? "w-72" : "w-16"
+        sidebarOpen ? "w-80" : "w-16"
       }`}
     >
-      {/* Logo area */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-ascgrey">
+      {/* Logo + App Name */}
+      <div className="border-b border-ascgrey">
+        {/* Collapse/Expand Button (always visible, always spaced) */}
+        <div className="flex justify-end px-2 pt-3">
+          <button
+            onClick={toggleSidebar}
+            aria-label="Toggle Sidebar"
+            className="text-gray-500 hover:text-ascblue rounded-md p-1 hover:bg-gray-100 transition"
+          >
+            {sidebarOpen ? <ChevronLeft size={22} /> : <ChevronRight size={22} />}
+          </button>
+        </div>
+
+        {/* Logo + App Name (only when expanded) */}
         {sidebarOpen && (
-          <img src="/Logo.png" alt="Ascendum" className="h-8 w-auto" />
+          <div className="flex flex-col items-center px-4 pb-3">
+            <img src="/Logo.png" alt="Ascendum" className="h-12 w-auto mb-1" />
+            <span className="text-base font-bold text-ascblue">Org Chart app</span>
+          </div>
         )}
-        <button onClick={toggleSidebar} className="text-gray-500 hover:text-ascblue">
-          {sidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
-        </button>
       </div>
+
+
 
       {/* Upload area */}
       <div className={`p-4 ${sidebarOpen ? "" : "hidden"}`}>
@@ -51,7 +65,7 @@ export default function Sidebar({
       </div>
 
       {/* File list */}
-      <div className="flex-1 overflow-auto px-2">
+      <div className={`flex-1 overflow-auto px-2 ${sidebarOpen ? "" : "pt-6"}`}>
         {files.map((file, idx) => (
           <div
             key={idx}

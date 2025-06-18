@@ -34,10 +34,10 @@ function App() {
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
-      if (!file) return;
-    
-      event.target.value = null; 
-      
+    if (!file) return;
+
+    event.target.value = null;
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const data = new Uint8Array(e.target.result);
@@ -95,7 +95,19 @@ function App() {
       />
 
       <main className="flex-1 p-6 bg-gray-50 min-h-screen overflow-auto">
-        <h1 className="text-2xl font-bold text-ascblue mb-4">Org Chart App</h1>
+        <div className="flex items-center gap-2 mb-4">
+          <img
+            src="/ascendum_iconsintranet_2017_soicon_15-Organizational Development.svg"
+            alt="Org Icon"
+            className="h-6 w-auto"
+          />
+          <h1 className="text-2xl font-bold text-ascblue">
+            {selectedFile
+              ? selectedFile.name.replace(/\.(xlsx|xls|csv)$/i, "")
+              : "Org Chart App"}
+          </h1>
+        </div>
+
         {selectedFile ? (
           <OrgChart
             data={selectedFile.data}
