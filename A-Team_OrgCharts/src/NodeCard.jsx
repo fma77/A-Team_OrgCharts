@@ -1,51 +1,80 @@
-export default function NodeCard({ nodeDatum }) {
+export default function NodeCard({ nodeDatum, fields = [], exportMode = false }) {
   const { name, attributes } = nodeDatum;
+  console.log("NodeCard attributes:", attributes);
 
-  // Helper to clean values
   const cleanValue = (value, type = "") => {
     if (!value) return "-";
 
+    let result = value;
+
     if (type === "location") {
-      return value.length > 10 ? value.substring(10).trim() : value;
+      result = value.length > 10 ? value.substring(10).trim() : value;
+      console.log("Location cleaned:", value, "→", result);
+      return result;
     }
 
-    return value.replace(/^\d{3,}[ _-]?/, "").trim();
+    if (typeof value === "string") {
+      result = value.replace(/^\d{3,}[ _-]?/, "").trim();
+      console.log("Value cleaned:", value, "→", result);
+      return result;
+    }
+
+    return value;
   };
+
+  const getValue = (key) =>
+    key === "Location"
+      ? cleanValue(attributes?.[key], "location")
+      : cleanValue(attributes?.[key]);
+
+  if (exportMode) {
+    return (
+      <div
+        style={{
+          backgroundColor: "#ffffff",
+          borderRadius: "12px",
+          width: "320px",
+          padding: "12px",
+          fontSize: "12px",
+          color: "#000000",
+          border: "none",
+          boxShadow: "none",
+          outline: "none",
+        }}
+      >
+        <div
+          style={{
+            fontWeight: "600",
+            fontSize: "14px",
+            marginBottom: "4px",
+          }}
+        >
+          {name}
+        </div>
+        {fields.map((key) => (
+          <div key={key}>
+            <strong>{key}:</strong> {getValue(key)}
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div
-      style={{
-        transition: "all 0.5s ease-in-out",
-        transform: "scale(1)",
-        opacity: 1,
-      }}
-      className="rounded-xl bg-white shadow-md border border-gray-300 p-3 w-[320px]"
+      className="rounded-xl bg-white shadow-md p-3 w-[320px]"
+      style={{ transition: "all 0.5s ease-in-out" }}
     >
       <div className="font-semibold text-base text-gray-900 mb-1">{name}</div>
       <div className="font-bold text-sm text-gray-800 mb-1">
-        {attributes?.Position || "-"}
+        {getValue("Position")}
       </div>
-      <div className="text-xs text-gray-600 space-y-1">
-        <div>
-          <span className="font-medium">Team:</span>{" "}
-          {cleanValue(attributes?.Department)}
-        </div>
-        <div>
-          <span className="font-medium">Company:</span>{" "}
-          {cleanValue(attributes?.Company)}
-        </div>
-        <div>
-          <span className="font-medium">Country:</span>{" "}
-          {attributes?.Country || "-"}
-        </div>
-        <div>
-          <span className="font-medium">Location:</span>{" "}
-          {cleanValue(attributes?.Location, "location")}
-        </div>
-        <div>
-          <span className="font-medium">Employee ID:</span>{" "}
-          {attributes?.EmployeeID || "-"}
-        </div>
+      <div className="text-xs text-gray-600 space-y-[1px]">
+        {fields.map((key) => (
+          <div key={key}>
+            <span className="font-medium">{key}:</span> {getValue(key)}
+          </div>
+        ))}
       </div>
     </div>
   );

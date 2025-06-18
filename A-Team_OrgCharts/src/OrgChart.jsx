@@ -2,9 +2,8 @@ import { useEffect, useState, useRef } from "react";
 import Tree from "react-d3-tree";
 import NodeCard from "./NodeCard";
 
-export default function OrgChart({ data }) {
+export default function OrgChart({ data, collapsedNodes, setCollapsedNodes, fields = [] }) {
   const [treeData, setTreeData] = useState(null);
-  const [collapsedNodes, setCollapsedNodes] = useState(new Set());
   const treeContainer = useRef();
 
   const buildTree = (flatData, collapsedSet = new Set()) => {
@@ -36,10 +35,9 @@ export default function OrgChart({ data }) {
       }
     });
 
-    // Tag nodes that have children
     const tagParents = (node) => {
       const id = node.attributes?.EmployeeID;
-      const reports = flatData.filter(p => p["Manager User Sys ID"] === id);
+      const reports = flatData.filter((p) => p["Manager User Sys ID"] === id);
       if (reports.length > 0) {
         node._hasChildren = true;
       }
@@ -48,7 +46,6 @@ export default function OrgChart({ data }) {
       }
     };
 
-    // Count total descendants for each node
     const countDescendants = (node) => {
       if (!node.children || node.children.length === 0) {
         node.descendantCount = 0;
@@ -64,7 +61,6 @@ export default function OrgChart({ data }) {
       return count;
     };
 
-    // Collapse nodes based on state
     const applyCollapse = (node) => {
       const id = node.attributes?.EmployeeID;
       if (collapsedSet.has(id)) {
@@ -104,9 +100,9 @@ export default function OrgChart({ data }) {
           data={[treeData]}
           orientation="vertical"
           pathFunc="step"
-          translate={{ x: window.innerWidth / 2, y: 150 }}
+          translate={{ x: window.innerWidth / 2, y: 80 }}
+          nodeSize={{ x: 360, y: 260 }}
           zoomable={true}
-          nodeSize={{ x: 400, y: 300 }}
           transitionDuration={500}
           renderCustomNodeElement={({ nodeDatum }) => {
             const id = nodeDatum.attributes?.EmployeeID;
@@ -118,13 +114,19 @@ export default function OrgChart({ data }) {
               <g onClick={() => handleNodeClick(nodeDatum)}>
                 <foreignObject
                   width={320}
-                  height={240}
+                  height={300}
                   x={-160}
-                  y={-120}
+                  y={-100}
                   style={{ pointerEvents: "none" }}
                 >
-                  <div style={{ pointerEvents: "all", position: "relative" }}>
-                    <NodeCard nodeDatum={nodeDatum} />
+                  <div
+                    style={{
+                      pointerEvents: "all",
+                      position: "relative",
+                      height: "100%",
+                    }}
+                  >
+                    <NodeCard nodeDatum={nodeDatum} fields={fields} />
                     {hasChildren && (
                       <div
                         style={{

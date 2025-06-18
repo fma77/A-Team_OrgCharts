@@ -19,15 +19,25 @@ function fixEncoding(str) {
 }
 
 function App() {
-  const [files, setFiles] = useState([]);
+  const [files, setFiles] = useState([]); // [{ name, data }]
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [collapsedNodes, setCollapsedNodes] = useState(new Set());
 
+  const fieldsToShow = [
+    "Department",
+    "Company",
+    "Country",
+    "Location",
+    "EmployeeID",
+  ];
+
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
-    if (!file) return;
-
+      if (!file) return;
+    
+      event.target.value = null; 
+      
     const reader = new FileReader();
     reader.onload = (e) => {
       const data = new Uint8Array(e.target.result);
@@ -55,8 +65,16 @@ function App() {
     reader.readAsArrayBuffer(file);
   };
 
-  const handleExportImage = (file) => {
-    alert("Image export not implemented yet — coming soon!");
+  const handleFileDelete = (indexToDelete) => {
+    setFiles((prev) => {
+      const updated = prev.filter((_, idx) => idx !== indexToDelete);
+      if (indexToDelete === selectedIndex) {
+        setSelectedIndex(null);
+      } else if (indexToDelete < selectedIndex) {
+        setSelectedIndex((i) => i - 1);
+      }
+      return updated;
+    });
   };
 
   const selectedFile = files[selectedIndex];
@@ -73,13 +91,18 @@ function App() {
           setCollapsedNodes(new Set());
         }}
         onUpload={handleFileUpload}
-        onExportImage={handleExportImage}
+        onDelete={handleFileDelete}
       />
 
       <main className="flex-1 p-6 bg-gray-50 min-h-screen overflow-auto">
         <h1 className="text-2xl font-bold text-ascblue mb-4">Org Chart App</h1>
         {selectedFile ? (
-          <OrgChart data={selectedFile.data} />
+          <OrgChart
+            data={selectedFile.data}
+            collapsedNodes={collapsedNodes}
+            setCollapsedNodes={setCollapsedNodes}
+            fields={fieldsToShow}
+          />
         ) : (
           <p className="text-sm text-gray-600">No file selected.</p>
         )}

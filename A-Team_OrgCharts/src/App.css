@@ -1,42 +1,174 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
+import { useState, useRef } from "react";
+import * as XLSX from "xlsx";
+import domtoimage from "dom-to-image-more";
+import OrgChart from "./OrgChart";
+import Sidebar from "./Sidebar";
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
+function fixEncoding(str) {
+  if (typeof str !== "string") return str;
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+  const likelyCorrupted = /Ã|Â|â|ê|î|ô|û/.test(str);
+  if (likelyCorrupted) {
+    try {
+      return decodeURIComponent(escape(str));
+    } catch {
+      return str;
+    }
   }
-  to {
-    transform: rotate(360deg);
-  }
+
+  return str;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+function App() {
+  const [files, setFiles] = useState([]);
+  const [selectedIndex, setSelectedIndex] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [collapsedNodes, setCollapsedNodes] = useState(new Set());
+  const [showExportView, setShowExportView] = useState(false);
+  const [zoomState, setZoomState] = useState({
+    translate: { x: window.innerWidth / 2, y: 150 },
+    scale: 1,
+  });
+  const exportRef = useRef();
+
+  const selectedFile = files[selectedIndex];
+
+  const selectedFields = [
+    "Position",
+    "Department",
+    "Company",
+    "Country",
+    "Location",
+    "EmployeeID",
+  ];
+
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const rawData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+      const cleanedData = rawData.map((row) => {
+        const fixedRow = {};
+        for (const key in row) {
+          const value = row[key];
+          fixedRow[fixEncoding(key)] =
+            typeof value === "string" ? fixEncoding(value) : value;
+        }
+        return fixedRow;
+      });
+
+      const newFile = { name: file.name, data: cleanedData };
+      setFiles((prev) => [...prev, newFile]);
+      setSelectedIndex(files.length);
+      setCollapsedNodes(new Set());
+    };
+
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleExportImage = (file) => {
+    if (!selectedFile) return;
+
+    setShowExportView(true);
+
+    setTimeout(() => {
+      const node = exportRef.current;
+      if (!node) {
+        alert("Something went wrong generating export image.");
+        setShowExportView(false);
+        return;
+      }
+
+      domtoimage
+        .toBlob(node)
+        .then((blob) => {
+          const baseName = file.name.replace(/\.[^/.]+$/, "");
+          const filename = `${baseName}.png`;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        })
+        .catch((error) => {
+          console.error("Export failed:", error);
+          alert("Failed to generate image.");
+        })
+        .finally(() => {
+          setShowExportView(false);
+        });
+    }, 300); // give React time to render export view
+  };
+
+  return (
+    <div className="flex font-sans text-gray-900">
+      <Sidebar
+        sidebarOpen={sidebarOpen}
+        toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        files={files}
+        selectedIndex={selectedIndex}
+        onSelectFile={(i) => {
+          setSelectedIndex(i);
+          setCollapsedNodes(new Set());
+        }}
+        onUpload={handleFileUpload}
+        onExportImage={handleExportImage}
+      />
+
+      <main className="flex-1 p-6 bg-gray-50 min-h-screen overflow-auto">
+        <h1 className="text-2xl font-bold text-ascblue mb-4">Org Chart App</h1>
+        {selectedFile ? (
+          <OrgChart
+            data={selectedFile.data}
+            collapsedNodes={collapsedNodes}
+            setCollapsedNodes={setCollapsedNodes}
+            fields={selectedFields}
+            exportMode={false}
+            zoomState={zoomState}
+            setZoomState={setZoomState}
+          />
+        ) : (
+          <p className="text-sm text-gray-600">No file selected.</p>
+        )}
+      </main>
+
+      {showExportView && (
+        <div
+          ref={exportRef}
+          style={{
+            position: "fixed",
+            top: "-10000px",
+            left: "-10000px",
+            width: "3000px",
+            height: "3000px",
+            backgroundColor: "white",
+            zIndex: -1,
+            overflow: "visible",
+          }}
+        >
+          <OrgChart
+            data={selectedFile.data}
+            collapsedNodes={collapsedNodes}
+            setCollapsedNodes={() => {}}
+            fields={selectedFields}
+            exportMode={true}
+            zoomState={zoomState}
+            setZoomState={null}
+          />
+        </div>
+      )}
+    </div>
+  );
 }
 
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
+export default App;
