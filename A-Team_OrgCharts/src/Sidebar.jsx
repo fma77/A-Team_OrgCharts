@@ -28,25 +28,35 @@ export default function Sidebar({
     >
       {/* Logo + App Name */}
       <div className="border-b border-ascgrey">
-        {/* Collapse/Expand Button (always visible, always spaced) */}
-        <div className="flex justify-end px-2 pt-3">
-          <button
-            onClick={toggleSidebar}
-            aria-label="Toggle Sidebar"
-            className="text-gray-500 hover:text-ascblue rounded-md p-1 hover:bg-gray-100 transition"
-          >
-            {sidebarOpen ? <ChevronLeft size={22} /> : <ChevronRight size={22} />}
-          </button>
-        </div>
-
-        {/* Logo + App Name (only when expanded) */}
-        {sidebarOpen && (
-          <div className="flex flex-col items-center px-4 pb-3">
-            <img src="/Logo.png" alt="Ascendum" className="h-12 w-auto mb-1" />
-            <span className="text-base font-bold text-ascblue">Org Chart app</span>
+        {sidebarOpen ? (
+          // Expanded state: stacked layout with logo + title
+          <div className="relative px-4 pt-4 pb-3">
+            <div className="flex flex-col items-center">
+              <button
+                onClick={toggleSidebar}
+                aria-label="Toggle Sidebar"
+                className="absolute top-0 right-0 text-gray-500 hover:text-ascblue rounded-md p-1 hover:bg-gray-100 transition"
+              >
+                <ChevronLeft size={22} />
+              </button>
+              <img src="/Logo.png" alt="Ascendum" className="h-12 w-auto mb-1 mt-1" />
+              <span className="text-base font-bold text-ascblue">Org Chart app</span>
+            </div>
+          </div>
+        ) : (
+          // Collapsed state: keep button in top right of full-width bar
+          <div className="flex justify-end px-2 py-3">
+            <button
+              onClick={toggleSidebar}
+              aria-label="Toggle Sidebar"
+              className="text-gray-500 hover:text-ascblue rounded-md p-1 hover:bg-gray-100 transition"
+            >
+              <ChevronRight size={22} />
+            </button>
           </div>
         )}
       </div>
+
 
 
 
