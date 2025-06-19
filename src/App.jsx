@@ -25,6 +25,7 @@ function App() {
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [collapsedNodes, setCollapsedNodes] = useState(new Set());
+  const [zoomResetSignal, setZoomResetSignal] = useState(false);
 
   const fieldsToShow = [
     "Department",
@@ -79,6 +80,11 @@ function App() {
     });
   };
 
+  const handleResetZoom = () => {
+    setCollapsedNodes(new Set());
+    setZoomResetSignal((prev) => !prev); // toggle to trigger re-render
+  };
+
   const selectedFile = files[selectedIndex];
 
   return (
@@ -91,6 +97,7 @@ function App() {
         onSelectFile={(i) => {
           setSelectedIndex(i);
           setCollapsedNodes(new Set());
+          setZoomResetSignal((prev) => !prev);
         }}
         onUpload={handleFileUpload}
         onDelete={handleFileDelete}
@@ -103,7 +110,11 @@ function App() {
             alt="Org Icon"
             className="h-6 w-auto"
           />
-          <h1 className="text-2xl font-bold text-ascblue">
+          <h1
+            className="text-2xl font-bold text-ascblue cursor-pointer"
+            onClick={handleResetZoom}
+            title="Reset view to root"
+          >
             {selectedFile
               ? selectedFile.name.replace(/\.(xlsx|xls|csv)$/i, "")
               : "Org Chart App"}
@@ -112,6 +123,7 @@ function App() {
 
         {selectedFile ? (
           <OrgChart
+            key={zoomResetSignal ? "reset-1" : "reset-0"} // force full reset
             data={selectedFile.data}
             collapsedNodes={collapsedNodes}
             setCollapsedNodes={setCollapsedNodes}

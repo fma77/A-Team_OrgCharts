@@ -57,9 +57,6 @@ export default function Sidebar({
         )}
       </div>
 
-
-
-
       {/* Upload area */}
       <div className={`p-4 ${sidebarOpen ? "" : "hidden"}`}>
         <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
@@ -89,9 +86,10 @@ export default function Sidebar({
             <div
               className="flex items-center gap-2 cursor-pointer truncate"
               onClick={() => onSelectFile(idx)}
+              title="Click to reset view"
             >
               <FileText size={16} />
-              {sidebarOpen && <span className="truncate">{file.name}</span>}
+              {sidebarOpen && <span className="truncate hover:underline">{file.name}</span>}
             </div>
             {sidebarOpen && (
               <button
