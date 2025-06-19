@@ -2,6 +2,7 @@ import { useState } from "react";
 import * as XLSX from "xlsx";
 import OrgChart from "./OrgChart";
 import Sidebar from "./Sidebar";
+import { Analytics } from "@vercel/analytics/react";
 
 function fixEncoding(str) {
   if (typeof str !== "string") return str;
@@ -119,6 +120,8 @@ function App() {
           <p className="text-sm text-gray-600">No file selected.</p>
         )}
       </main>
+
+      <Analytics />
     </div>
   );
 }
