@@ -3,6 +3,7 @@ import * as XLSX from "xlsx";
 import OrgChart from "./OrgChart";
 import Sidebar from "./Sidebar";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 function fixEncoding(str) {
   if (typeof str !== "string") return str;
@@ -122,6 +123,7 @@ function App() {
       </main>
 
       <Analytics />
+      <SpeedInsights />
     </div>
   );
 }
