@@ -4,12 +4,14 @@ import NodeCard from "./NodeCard";
 
 export default function OrgChart({ data, collapsedNodes, setCollapsedNodes, fields = [] }) {
   const [treeData, setTreeData] = useState(null);
+  const [zoomStack, setZoomStack] = useState([]); // stack of previous root IDs
+  const [currentRootId, setCurrentRootId] = useState(null);
   const treeContainer = useRef();
 
-  const buildTree = (flatData, collapsedSet = new Set()) => {
+  const buildTree = (flatData, collapsedSet = new Set(), rootId = null) => {
     const idMap = {};
     flatData.forEach((person) => {
-      const id = person["User/Employee ID"];
+      const id = String(person["User/Employee ID"]);
       idMap[id] = {
         name: person["Display Name"],
         attributes: {
@@ -24,29 +26,47 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes, fiel
       };
     });
 
-    let root = null;
     flatData.forEach((person) => {
-      const id = person["User/Employee ID"];
-      const managerId = person["Manager User Sys ID"];
-      if (!managerId || managerId === "NO_MANAGER") {
-        root = idMap[id];
-      } else if (idMap[managerId]) {
+      const id = String(person["User/Employee ID"]);
+      const managerId = String(person["Manager User Sys ID"] || "");
+      if (idMap[managerId]) {
         idMap[managerId].children.push(idMap[id]);
       }
     });
 
-    const tagParents = (node) => {
-      const id = node.attributes?.EmployeeID;
-      const reports = flatData.filter((p) => p["Manager User Sys ID"] === id);
-      if (reports.length > 0) {
-        node._hasChildren = true;
-      }
-      if (node.children) {
-        node.children.forEach(tagParents);
-      }
+    const findRootNode = (startId) => {
+      const node = idMap[startId];
+      if (!node) return null;
+
+      const collectSubtree = (n) => {
+        const children = n.children || [];
+        n.children = children.map((child) => collectSubtree(child));
+        return n;
+      };
+
+      return collectSubtree(node);
     };
 
-    const countDescendants = (node) => {
+    let root = null;
+    if (rootId) {
+      root = findRootNode(rootId);
+    } else {
+      const rootCandidate = flatData.find((p) => !p["Manager User Sys ID"] || p["Manager User Sys ID"] === "NO_MANAGER");
+      if (rootCandidate) {
+        root = findRootNode(String(rootCandidate["User/Employee ID"]));
+      }
+    }
+
+    if (!root) {
+      console.warn("No valid root found for", rootId);
+      return null;
+    }
+
+    const tagParentsAndCount = (node) => {
+      const id = node.attributes?.EmployeeID;
+      const reports = flatData.filter((p) => String(p["Manager User Sys ID"]) === id);
+      node._hasChildren = reports.length > 0;
+
       if (!node.children || node.children.length === 0) {
         node.descendantCount = 0;
         return 0;
@@ -54,7 +74,7 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes, fiel
 
       let count = 0;
       for (let child of node.children) {
-        count += 1 + countDescendants(child);
+        count += 1 + tagParentsAndCount(child);
       }
 
       node.descendantCount = count;
@@ -70,17 +90,16 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes, fiel
       }
     };
 
-    tagParents(root);
-    countDescendants(root);
+    tagParentsAndCount(root);
     applyCollapse(root);
 
     return root;
   };
 
   useEffect(() => {
-    const tree = buildTree(data, collapsedNodes);
+    const tree = buildTree(data, collapsedNodes, currentRootId);
     setTreeData(tree);
-  }, [data, collapsedNodes]);
+  }, [data, collapsedNodes, currentRootId]);
 
   const handleNodeClick = (nodeData) => {
     const id = nodeData.attributes?.EmployeeID;
@@ -93,6 +112,26 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes, fiel
     setCollapsedNodes(newSet);
   };
 
+  const handleZoomIn = (id) => {
+    if (id === currentRootId || (!currentRootId && id === getDefaultRootID())) return;
+    setZoomStack((prev) => [...prev, currentRootId]);
+    setCurrentRootId(id);
+  };
+
+  const handleZoomOut = () => {
+    setZoomStack((prev) => {
+      const updated = [...prev];
+      const last = updated.pop();
+      setCurrentRootId(last || null);
+      return updated;
+    });
+  };
+
+  const getDefaultRootID = () => {
+    const rootCandidate = data.find((p) => !p["Manager User Sys ID"] || p["Manager User Sys ID"] === "NO_MANAGER");
+    return rootCandidate ? String(rootCandidate["User/Employee ID"]) : null;
+  };
+
   return (
     <div className="w-full h-screen overflow-auto" ref={treeContainer}>
       {treeData && (
@@ -100,15 +139,16 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes, fiel
           data={[treeData]}
           orientation="vertical"
           pathFunc="step"
-          translate={{ x: window.innerWidth / 2, y: 80 }}
+          translate={{ x: window.innerWidth / 2, y: 140 }}
           nodeSize={{ x: 360, y: 260 }}
           zoomable={true}
           transitionDuration={500}
           renderCustomNodeElement={({ nodeDatum }) => {
             const id = nodeDatum.attributes?.EmployeeID;
             const isCollapsed = collapsedNodes.has(id);
-            const hasChildren = nodeDatum._hasChildren === true;
-            const count = nodeDatum.descendantCount;
+            const isZoomedRoot = currentRootId === id;
+            const defaultRootId = getDefaultRootID();
+            const isDefaultRoot = !currentRootId && id === defaultRootId;
 
             return (
               <g onClick={() => handleNodeClick(nodeDatum)}>
@@ -126,29 +166,15 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes, fiel
                       height: "100%",
                     }}
                   >
-                    <NodeCard nodeDatum={nodeDatum} fields={fields} />
-                    {hasChildren && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "6px",
-                          right: "8px",
-                          padding: "2px 6px",
-                          borderRadius: "9999px",
-                          backgroundColor: "#e2e8f0",
-                          color: "#1f2937",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "4px",
-                          fontSize: "13px",
-                          fontWeight: "bold",
-                          border: "1px solid #cbd5e1",
-                        }}
-                      >
-                        <span>{isCollapsed ? "▶" : "🔽"}</span>
-                        <span>{count}</span>
-                      </div>
-                    )}
+                    <NodeCard
+                      nodeDatum={nodeDatum}
+                      fields={fields}
+                      onZoomIn={() => handleZoomIn(id)}
+                      onZoomOut={handleZoomOut}
+                      isZoomedRoot={isZoomedRoot}
+                      showZoomControls={!isZoomedRoot && !isDefaultRoot}
+                      canZoomOut={zoomStack.length > 0 && isZoomedRoot}
+                    />
                   </div>
                 </foreignObject>
               </g>

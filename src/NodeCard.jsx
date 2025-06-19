@@ -1,6 +1,16 @@
-export default function NodeCard({ nodeDatum, fields = [], exportMode = false }) {
-  const { name, attributes } = nodeDatum;
-  console.log("NodeCard attributes:", attributes);
+import { Search, CircleArrowLeft } from "lucide-react";
+
+export default function NodeCard({
+  nodeDatum,
+  fields = [],
+  exportMode = false,
+  onZoomIn,
+  onZoomOut,
+  isZoomedRoot,
+  canZoomOut,
+  showZoomControls,
+}) {
+  const { name, attributes, descendantCount = 0, _hasChildren } = nodeDatum;
 
   const cleanValue = (value, type = "") => {
     if (!value) return "-";
@@ -9,13 +19,11 @@ export default function NodeCard({ nodeDatum, fields = [], exportMode = false })
 
     if (type === "location") {
       result = value.length > 10 ? value.substring(10).trim() : value;
-      console.log("Location cleaned:", value, "→", result);
       return result;
     }
 
     if (typeof value === "string") {
       result = value.replace(/^\d{3,}[ _-]?/, "").trim();
-      console.log("Value cleaned:", value, "→", result);
       return result;
     }
 
@@ -62,9 +70,39 @@ export default function NodeCard({ nodeDatum, fields = [], exportMode = false })
 
   return (
     <div
-      className="rounded-xl bg-white shadow-md p-3 w-[320px]"
+      className="relative rounded-xl bg-white shadow-md p-3 w-[320px]"
       style={{ transition: "all 0.5s ease-in-out" }}
     >
+      {/* Zoom controls top-right */}
+      {canZoomOut ? (
+        <div className="absolute top-1.5 right-1.5">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onZoomOut();
+            }}
+            title="Go back to previous view"
+            className="text-gray-500 hover:text-ascblue bg-white p-1 rounded-full shadow border"
+          >
+            <CircleArrowLeft size={16} />
+          </button>
+        </div>
+      ) : showZoomControls ? (
+        <div className="absolute top-1.5 right-1.5">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onZoomIn();
+            }}
+            title="Zoom into this subtree"
+            className="text-gray-500 hover:text-ascblue bg-white p-1 rounded-full shadow border"
+          >
+            <Search size={16} />
+          </button>
+        </div>
+      ) : null}
+
+      {/* Node content */}
       <div className="font-semibold text-base text-gray-900 mb-1">{name}</div>
       <div className="font-bold text-sm text-gray-800 mb-1">
         {getValue("Position")}
@@ -76,6 +114,21 @@ export default function NodeCard({ nodeDatum, fields = [], exportMode = false })
           </div>
         ))}
       </div>
+
+      {/* Descendant count bottom-right */}
+      {_hasChildren && (
+        <div
+          className="absolute bottom-2 right-2 px-2 py-[2px] rounded-full border text-xs font-bold flex items-center gap-1"
+          style={{
+            backgroundColor: "#e2e8f0",
+            color: "#1f2937",
+            border: "1px solid #cbd5e1",
+          }}
+        >
+          <span>{descendantCount > 0 ? "🔽" : "▶"}</span>
+          <span>{descendantCount}</span>
+        </div>
+      )}
     </div>
   );
 }
