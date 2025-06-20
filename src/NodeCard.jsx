@@ -9,6 +9,7 @@ export default function NodeCard({
   isZoomedRoot,
   canZoomOut,
   showZoomControls,
+  isCollapsed, // ✅ NEW
 }) {
   const { name, attributes, descendantCount = 0, _hasChildren } = nodeDatum;
 
@@ -125,7 +126,7 @@ export default function NodeCard({
             border: "1px solid #cbd5e1",
           }}
         >
-          <span>{descendantCount > 0 ? "🔽" : "▶"}</span>
+          <span>{isCollapsed ? "▶" : "🔽"}</span>
           <span>{descendantCount}</span>
         </div>
       )}

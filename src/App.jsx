@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as XLSX from "xlsx";
 import OrgChart from "./OrgChart";
 import Sidebar from "./Sidebar";
@@ -85,6 +85,18 @@ function App() {
     setZoomResetSignal((prev) => !prev); // toggle to trigger re-render
   };
 
+  // ✅ Ctrl+0 or Cmd+0 resets the zoom to the root
+  useEffect(() => {
+    const handleKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "0") {
+        e.preventDefault();
+        handleResetZoom();
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, []);
+
   const selectedFile = files[selectedIndex];
 
   return (
@@ -123,7 +135,7 @@ function App() {
 
         {selectedFile ? (
           <OrgChart
-            key={zoomResetSignal ? "reset-1" : "reset-0"} // force full reset
+            key={zoomResetSignal ? "reset-1" : "reset-0"}
             data={selectedFile.data}
             collapsedNodes={collapsedNodes}
             setCollapsedNodes={setCollapsedNodes}

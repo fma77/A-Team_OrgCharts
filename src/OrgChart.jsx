@@ -1,14 +1,15 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useLayoutEffect, useState, useRef, useCallback } from "react";
 import Tree from "react-d3-tree";
 import NodeCard from "./NodeCard";
 
 export default function OrgChart({ data, collapsedNodes, setCollapsedNodes, fields = [] }) {
   const [treeData, setTreeData] = useState(null);
-  const [zoomStack, setZoomStack] = useState([]); // stack of previous root IDs
+  const [zoomStack, setZoomStack] = useState([]);
   const [currentRootId, setCurrentRootId] = useState(null);
+  const [translate, setTranslate] = useState({ x: 0, y: 140 });
   const treeContainer = useRef();
 
-  const buildTree = (flatData, collapsedSet = new Set(), rootId = null) => {
+  const buildTree = useCallback((flatData, collapsedSet = new Set(), rootId = null) => {
     const idMap = {};
     flatData.forEach((person) => {
       const id = String(person["User/Employee ID"]);
@@ -51,7 +52,9 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes, fiel
     if (rootId) {
       root = findRootNode(rootId);
     } else {
-      const rootCandidate = flatData.find((p) => !p["Manager User Sys ID"] || p["Manager User Sys ID"] === "NO_MANAGER");
+      const rootCandidate = flatData.find(
+        (p) => !p["Manager User Sys ID"] || p["Manager User Sys ID"] === "NO_MANAGER"
+      );
       if (rootCandidate) {
         root = findRootNode(String(rootCandidate["User/Employee ID"]));
       }
@@ -83,7 +86,8 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes, fiel
 
     const applyCollapse = (node) => {
       const id = node.attributes?.EmployeeID;
-      if (collapsedSet.has(id)) {
+      node._isCollapsed = collapsedSet.has(id); // ✅ NEW
+      if (node._isCollapsed) {
         delete node.children;
       } else if (node.children) {
         node.children.forEach(applyCollapse);
@@ -94,12 +98,26 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes, fiel
     applyCollapse(root);
 
     return root;
-  };
+  }, []);
+
+  const getDefaultRootID = useCallback(() => {
+    const rootCandidate = data.find(
+      (p) => !p["Manager User Sys ID"] || p["Manager User Sys ID"] === "NO_MANAGER"
+    );
+    return rootCandidate ? String(rootCandidate["User/Employee ID"]) : null;
+  }, [data]);
+
+  useLayoutEffect(() => {
+    if (!treeContainer.current) return;
+    const width = treeContainer.current.offsetWidth;
+    setTranslate({ x: width / 2, y: 140 });
+  }, [currentRootId]);
 
   useEffect(() => {
-    const tree = buildTree(data, collapsedNodes, currentRootId);
+    const rootId = currentRootId || getDefaultRootID();
+    const tree = buildTree(data, collapsedNodes, rootId);
     setTreeData(tree);
-  }, [data, collapsedNodes, currentRootId]);
+  }, [data, collapsedNodes, currentRootId, buildTree, getDefaultRootID]);
 
   const handleNodeClick = (nodeData) => {
     const id = nodeData.attributes?.EmployeeID;
@@ -127,19 +145,15 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes, fiel
     });
   };
 
-  const getDefaultRootID = () => {
-    const rootCandidate = data.find((p) => !p["Manager User Sys ID"] || p["Manager User Sys ID"] === "NO_MANAGER");
-    return rootCandidate ? String(rootCandidate["User/Employee ID"]) : null;
-  };
-
   return (
     <div className="w-full h-screen overflow-auto" ref={treeContainer}>
       {treeData && (
         <Tree
+          key={currentRootId || "default-root"}
           data={[treeData]}
           orientation="vertical"
           pathFunc="step"
-          translate={{ x: window.innerWidth / 2, y: 140 }}
+          translate={translate}
           nodeSize={{ x: 360, y: 260 }}
           zoomable={true}
           transitionDuration={500}
@@ -147,8 +161,7 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes, fiel
             const id = nodeDatum.attributes?.EmployeeID;
             const isCollapsed = collapsedNodes.has(id);
             const isZoomedRoot = currentRootId === id;
-            const defaultRootId = getDefaultRootID();
-            const isDefaultRoot = !currentRootId && id === defaultRootId;
+            const isDefaultRoot = !currentRootId && id === getDefaultRootID();
 
             return (
               <g onClick={() => handleNodeClick(nodeDatum)}>
@@ -174,6 +187,7 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes, fiel
                       isZoomedRoot={isZoomedRoot}
                       showZoomControls={!isZoomedRoot && !isDefaultRoot}
                       canZoomOut={zoomStack.length > 0 && isZoomedRoot}
+                      isCollapsed={isCollapsed} // ✅ NEW
                     />
                   </div>
                 </foreignObject>
