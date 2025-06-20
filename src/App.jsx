@@ -20,6 +20,17 @@ function fixEncoding(str) {
   return str;
 }
 
+const toggleableFields = [
+  { key: "Department", label: "Department" },
+  { key: "Location", label: "Location" },
+  { key: "Country", label: "Country" },
+  { key: "Career Level", label: "Career Level" },
+  { key: "Job Classification", label: "Job Classification" },
+  { key: "Job Grade", label: "Job Grade" },
+  { key: "Division", label: "Division" },
+  { key: "User/Employee ID", label: "Employee ID" },
+];
+
 function App() {
   const [files, setFiles] = useState([]); // [{ name, data }]
   const [selectedIndex, setSelectedIndex] = useState(null);
@@ -27,13 +38,13 @@ function App() {
   const [collapsedNodes, setCollapsedNodes] = useState(new Set());
   const [zoomResetSignal, setZoomResetSignal] = useState(false);
 
-  const fieldsToShow = [
+  const [visibleFields, setVisibleFields] = useState([
+    "Division",
     "Department",
-    "Company",
-    "Country",
-    "Location",
-    "EmployeeID",
-  ];
+    "Job Classification",
+    "Career Level",
+    "Job Grade",
+  ]);
 
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
@@ -52,8 +63,9 @@ function App() {
       const cleanedData = rawData.map((row) => {
         const fixedRow = {};
         for (const key in row) {
+          const cleanedKey = fixEncoding(key).trim().replace(/\s+/g, " ");
           const value = row[key];
-          fixedRow[fixEncoding(key)] =
+          fixedRow[cleanedKey] =
             typeof value === "string" ? fixEncoding(value) : value;
         }
         return fixedRow;
@@ -85,7 +97,6 @@ function App() {
     setZoomResetSignal((prev) => !prev); // toggle to trigger re-render
   };
 
-  // ✅ Ctrl+0 or Cmd+0 resets the zoom to the root
   useEffect(() => {
     const handleKey = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "0") {
@@ -113,6 +124,9 @@ function App() {
         }}
         onUpload={handleFileUpload}
         onDelete={handleFileDelete}
+        visibleFields={visibleFields}
+        setVisibleFields={setVisibleFields}
+        toggleableFields={toggleableFields}
       />
 
       <main className="flex-1 p-6 bg-gray-50 min-h-screen overflow-auto">
@@ -139,7 +153,7 @@ function App() {
             data={selectedFile.data}
             collapsedNodes={collapsedNodes}
             setCollapsedNodes={setCollapsedNodes}
-            fields={fieldsToShow}
+            fields={visibleFields}
           />
         ) : (
           <p className="text-sm text-gray-600">No file selected.</p>

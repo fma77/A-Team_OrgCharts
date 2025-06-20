@@ -22,6 +22,10 @@ export default function OrgChart({ data, collapsedNodes, setCollapsedNodes, fiel
           Company: person["Company"],
           Location: person["Location"],
           Department: person["Functional Area / Department"],
+          "Career Level": person["Career Level"],
+          "Job Classification": person["Job Classification"],
+          "Job Grade": person["Job Grade"],
+          Division: person["Division"],
         },
         children: [],
       };

@@ -6,6 +6,8 @@ import {
   Settings,
   Trash,
   X,
+  ChevronDown,
+  ChevronRight as ChevronCollapsed,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -17,8 +19,21 @@ export default function Sidebar({
   onSelectFile,
   onUpload,
   onDelete,
+  visibleFields,
+  setVisibleFields,
+  toggleableFields,
 }) {
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [fieldsPanelOpen, setFieldsPanelOpen] = useState(true);
+
+  const toggleField = (key) => {
+    setVisibleFields((prev) =>
+      prev.includes(key)
+        ? prev.filter((k) => k !== key)
+        : [...prev, key]
+    );
+  };
 
   return (
     <div
@@ -29,7 +44,6 @@ export default function Sidebar({
       {/* Logo + App Name */}
       <div className="border-b border-ascgrey">
         {sidebarOpen ? (
-          // Expanded state: stacked layout with logo + title
           <div className="relative px-4 pt-4 pb-3">
             <div className="flex flex-col items-center">
               <button
@@ -44,7 +58,6 @@ export default function Sidebar({
             </div>
           </div>
         ) : (
-          // Collapsed state: keep button in top right of full-width bar
           <div className="flex justify-end px-2 py-3">
             <button
               onClick={toggleSidebar}
@@ -57,7 +70,7 @@ export default function Sidebar({
         )}
       </div>
 
-      {/* Upload area */}
+      {/* Upload */}
       <div className={`p-4 ${sidebarOpen ? "" : "hidden"}`}>
         <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
           <Upload size={16} />
@@ -104,12 +117,52 @@ export default function Sidebar({
         ))}
       </div>
 
-      {/* Settings icon */}
+      {/* Settings: toggle + subareas */}
       <div className="p-4 border-t border-ascgrey">
-        <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-ascblue">
+        <button
+          onClick={() => setSettingsOpen((open) => !open)}
+          className="flex items-center gap-2 text-sm text-gray-600 hover:text-ascblue"
+        >
           <Settings size={16} />
           {sidebarOpen && <span>Settings</span>}
         </button>
+
+        {sidebarOpen && settingsOpen && (
+          <div className="mt-3 pl-1 space-y-4 text-xs text-gray-700">
+            {/* Field Selection Panel */}
+            <div>
+              <button
+                onClick={() => setFieldsPanelOpen((open) => !open)}
+                className="flex items-center gap-1 text-gray-500 hover:text-ascblue mb-1 font-semibold"
+              >
+                {fieldsPanelOpen ? (
+                  <ChevronDown size={12} />
+                ) : (
+                  <ChevronCollapsed size={12} />
+                )}
+                <span className="text-[11px] uppercase tracking-wide">
+                  Field selection
+                </span>
+              </button>
+
+              {fieldsPanelOpen && (
+                <div className="space-y-1 pl-4">
+                  {toggleableFields.map(({ key, label }) => (
+                    <label key={key} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={visibleFields.includes(key)}
+                        onChange={() => toggleField(key)}
+                        className="accent-ascblue"
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Delete confirmation modal */}

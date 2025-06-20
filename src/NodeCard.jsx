@@ -9,11 +9,13 @@ export default function NodeCard({
   isZoomedRoot,
   canZoomOut,
   showZoomControls,
-  isCollapsed, // ✅ NEW
 }) {
   const { name, attributes, descendantCount = 0, _hasChildren } = nodeDatum;
 
-  const cleanValue = (value, type = "") => {
+  // Configurable cleanup rules by field
+  const cleanupAfterHyphenFields = ["Job Grade", "Division"];
+
+  const cleanValue = (value, type = "", key = "") => {
     if (!value) return "-";
 
     let result = value;
@@ -24,6 +26,13 @@ export default function NodeCard({
     }
 
     if (typeof value === "string") {
+      // If the field is in our cleanup list and contains a hyphen
+      if (cleanupAfterHyphenFields.includes(key) && value.includes("-")) {
+        result = value.split("-")[1]?.trim() || "";
+        return result || "-";
+      }
+
+      // Generic numeric code cleanup
       result = value.replace(/^\d{3,}[ _-]?/, "").trim();
       return result;
     }
@@ -33,8 +42,8 @@ export default function NodeCard({
 
   const getValue = (key) =>
     key === "Location"
-      ? cleanValue(attributes?.[key], "location")
-      : cleanValue(attributes?.[key]);
+      ? cleanValue(attributes?.[key], "location", key)
+      : cleanValue(attributes?.[key], "", key);
 
   if (exportMode) {
     return (
@@ -51,13 +60,7 @@ export default function NodeCard({
           outline: "none",
         }}
       >
-        <div
-          style={{
-            fontWeight: "600",
-            fontSize: "14px",
-            marginBottom: "4px",
-          }}
-        >
+        <div style={{ fontWeight: "600", fontSize: "14px", marginBottom: "4px" }}>
           {name}
         </div>
         {fields.map((key) => (
@@ -126,7 +129,7 @@ export default function NodeCard({
             border: "1px solid #cbd5e1",
           }}
         >
-          <span>{isCollapsed ? "▶" : "🔽"}</span>
+          <span>{descendantCount > 0 ? "🔽" : "▶"}</span>
           <span>{descendantCount}</span>
         </div>
       )}
