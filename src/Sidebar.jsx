@@ -54,7 +54,12 @@ export default function Sidebar({
                 <ChevronLeft size={22} />
               </button>
               <img src="/Logo.png" alt="Ascendum" className="h-12 w-auto mb-1 mt-1" />
-              <span className="text-base font-bold text-ascblue">Org Chart app</span>
+              <div className="flex flex-col items-center mt-2 space-y-1">
+                <div className="px-3 py-1 rounded-lg border border-ascblue text-[13px] font-semibold text-ascblue bg-white shadow-sm tracking-wide uppercase">
+                  Org Chart App
+                </div>
+                <div className="h-[2px] w-8 bg-ascred rounded-full"></div>
+              </div>
             </div>
           </div>
         ) : (

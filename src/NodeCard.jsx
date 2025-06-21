@@ -1,4 +1,4 @@
-import { Search, CircleArrowLeft } from "lucide-react";
+import { Search, CircleArrowLeft, ChevronRight, ChevronDown } from "lucide-react";
 
 export default function NodeCard({
   nodeDatum,
@@ -9,6 +9,7 @@ export default function NodeCard({
   isZoomedRoot,
   canZoomOut,
   showZoomControls,
+  isCollapsed,
 }) {
   const { name, attributes, descendantCount = 0, _hasChildren } = nodeDatum;
 
@@ -111,10 +112,11 @@ export default function NodeCard({
       <div className="font-bold text-sm text-gray-800 mb-1">
         {getValue("Position")}
       </div>
-      <div className="text-xs text-gray-600 space-y-[1px]">
+      <div className="text-xs text-gray-600 space-y-[1px] font-sans">
         {fields.map((key) => (
           <div key={key}>
-            <span className="font-medium">{key}:</span> {getValue(key)}
+            <span className="font-medium">{key}:</span>{" "}
+            <span className="font-bold font-montserrat">{getValue(key)}</span>
           </div>
         ))}
       </div>
@@ -122,14 +124,18 @@ export default function NodeCard({
       {/* Descendant count bottom-right */}
       {_hasChildren && (
         <div
-          className="absolute bottom-2 right-2 px-2 py-[2px] rounded-full border text-xs font-bold flex items-center gap-1"
+          className="absolute bottom-2 right-2 px-2 py-[2px] rounded-full border text-xs font-bold flex items-center gap-1 text-ascblue"
           style={{
             backgroundColor: "#e2e8f0",
-            color: "#1f2937",
             border: "1px solid #cbd5e1",
           }}
         >
-          <span>{descendantCount > 0 ? "🔽" : "▶"}</span>
+          <ChevronRight
+            size={14}
+            className={`transition-transform duration-200 ${
+              isCollapsed ? "rotate-0" : "rotate-90"
+            } text-ascblue`}
+          />
           <span>{descendantCount}</span>
         </div>
       )}
