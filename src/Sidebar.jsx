@@ -59,6 +59,12 @@ export default function Sidebar({
                   Org Chart App
                 </div>
                 <div className="h-[2px] w-8 bg-ascred rounded-full"></div>
+                <div
+                  className="text-xs text-[#003846] opacity-70 mt-1 cursor-pointer hover:underline"
+                  title="Release notes coming soon"
+                >
+                  v1.1.0
+                </div>
               </div>
             </div>
           </div>
